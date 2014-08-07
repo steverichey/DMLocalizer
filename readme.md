@@ -1,10 +1,10 @@
-# Don't Move Localizer
+# [Don't Move Localizer](http://steverichey.github.io/DMLocalizer/)
 
 A localization tool for Don't Move. Creates static art assets for various languages, which can be read by the game.
 
 # How To
 
-1. Go to www.exampleurl.com
+1. Go to http://steverichey.github.io/DMLocalizer/
 2. Type in or copy/paste the text for your desired language.
 3. Click on the button corresponding to the desired style.
 4. Click "get" and save the file using this format. In all cases replace `la` with the applicable [ISO 639-1 language code](http://en.wikipedia.org/wiki/List_of_ISO_639-1_codes)
@@ -16,7 +16,7 @@ A localization tool for Don't Move. Creates static art assets for various langua
 5. Save the file to the `images` folder, in the same directory as `DontMove.exe`
 6. Make sure that `locale/default.language` is set to the proper language code for the image you've added.
 7. Start the game and ensure that it works!
-8. Want it to be added to the game proper? Open an issue. Thanks for your help!
+8. Want it to be added to the game proper? [Open an issue](./../../issues). Thanks for your help!
 
 MIT licensed.
 
