@@ -8,11 +8,15 @@ import flixel.text.FlxText;
 import flixel.ui.FlxButton;
 import flixel.math.FlxMath;
 import flixel.system.FlxAssets;
+import openfl.Lib;
 
 import flash.text.Font;
 import flash.text.TextFormat;
 import flash.text.TextRenderer;
 import flash.text.AntiAliasType;
+import flash.net.FileReference;
+import flash.utils.ByteArray;
+import flash.display.PNGEncoderOptions;
 
 @:font("assets/BebasNeue.ttf") private class Bebas extends Font {}
 
@@ -20,6 +24,7 @@ class PlayState extends FlxState
 {
 	private var info:FlxText;
 	private var text:FlxText;
+	private var edit:FlxButton;
 	private var styleTitle:FlxButton;
 	private var styleLevelUp:FlxButton;
 	private var styleZenith:FlxButton;
@@ -29,7 +34,7 @@ class PlayState extends FlxState
 	// Static, so unaffected by state switch
 	
 	private static var currentStyle:TextStyle = TextStyle.TITLE;
-	private static var previousText:String = "DON'T MOVE";
+	private static var previousText:String = "HELLO";
 	private static var flixelFontName:String = FlxAssets.FONT_DEFAULT;
 	
 	inline static private var PADDING_X:Int = -3;
@@ -96,7 +101,10 @@ class PlayState extends FlxState
 		
 		// Create buttons
 		
-		styleTitle = new FlxButton(1, FlxG.height - 20, "TITLE", onClickTitle);
+		edit = new FlxButton(1, FlxG.height - 38, "Edit", onClickEdit);
+		edit.makeGraphic(32, 18, AWFUL_ORANGE);
+		
+		styleTitle = new FlxButton(1, FlxG.height - 19, "TITLE", onClickTitle);
 		styleTitle.makeGraphic(32, 18, PAINFUL_RED);
 		
 		styleLevelUp = new FlxButton(styleTitle.x + styleTitle.width + 1, FlxG.height - 19, "LVL", onClickLevelUp);
@@ -111,6 +119,7 @@ class PlayState extends FlxState
 		export = new FlxButton(styleGameOver.x + styleGameOver.width + 1, FlxG.height - 19, "Get", onClickExport);
 		export.makeGraphic(FlxG.width - Std.int(export.x) - 1, 18, AWFUL_ORANGE);
 		
+		add(edit);
 		add(styleTitle);
 		add(styleLevelUp);
 		add(styleZenith);
@@ -151,6 +160,11 @@ class PlayState extends FlxState
 		}
 	}
 	
+	private function onClickEdit():Void
+	{
+		// allow edit text popup
+	}
+	
 	private function onClickTitle():Void { tryAssign(TextStyle.TITLE); }
 	private function onClickLevelUp():Void { tryAssign(TextStyle.LEVELUP); }
 	private function onClickZenith():Void { tryAssign(TextStyle.ZENITH); }
@@ -168,12 +182,46 @@ class PlayState extends FlxState
 	
 	private function onClickExport():Void
 	{
+		var bytearray:ByteArray = encodeBitmapDataToPNG(text.pixels);
 		
+		openSaveFileDialog(bytearray, getFileName());
 	}
 	
-	private function styleShift(Object:FlxSprite, NormalColor:UInt, HiColor:UInt, MedHiColor:UInt, LowColor:UInt):Void
+	/**
+	 * Just a wrapper for FileReference, this opens a save file dialog in Flash.
+	 * 
+	 * @param	Data			The data to save, stored as a ByteArray.
+	 * @param	DefaultFileName	The default name to be shown in the dialog.
+	 */
+	private function openSaveFileDialog(Data:ByteArray, DefaultFileName:String):Void
 	{
-		var p:BitmapData = Object.pixels;
+		new FileReference().save(Data, DefaultFileName);
+	}
+	
+	/**
+	 * Converts BitmapData to a ByteArray encoded as PNG. Mostly a wrapper for BitmapData.encode()
+	 * 
+	 * @param	Image	The BitmapData to encode. This could be, for example, a FlxSprite's pixels.
+	 */
+	private function encodeBitmapDataToPNG(Image:BitmapData):ByteArray
+	{
+		return Image.clone().encode(Image.rect, new PNGEncoderOptions());
+	}
+	
+	private function getFileName():String
+	{
+		switch (currentStyle)
+		{
+			case TextStyle.TITLE: 		return FlxG.random.bool() ? "dont_en.png" : "move_en.png";
+			case TextStyle.LEVELUP: 	return "levelup_en.png";
+			case TextStyle.ZENITH: 		return "zenith_en.png";
+			case TextStyle.GAMEOVER: 	return "gameover_en.png";
+		}
+	}
+	
+	private function styleShift(Obj:FlxSprite, NormalColor:UInt, HiColor:UInt, MedHiColor:UInt, LowColor:UInt):Void
+	{
+		var p:BitmapData = Obj.pixels;
 		var w:Int = p.width;
 		var h:Int = p.height;
 		
@@ -261,7 +309,7 @@ class PlayState extends FlxState
 			yPos++;
 		}
 		
-		Object.pixels = p;
+		Obj.pixels = p;
 	}
 }
 

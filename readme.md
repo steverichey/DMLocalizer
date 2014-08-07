@@ -18,6 +18,14 @@ A localization tool for Don't Move. Creates static art assets for various langua
 7. Start the game and ensure that it works!
 8. Want it to be added to the game proper? [Open an issue](./../../issues). Thanks for your help!
 
-MIT licensed.
+# Building
 
-Don't Move is (c) 2013-2014 Steve Richey.
+This is hosted online, but if you run `lime build flash` from the command line you'll have a working copy of this for whatever. Requires Haxe 3.1.3, OpenFL 2, and HaxeFlixel 4. Not tested on other platforms, this is just a cheesy Flash deal.
+
+# Credits
+
+Danish translation: Anders Nissen
+
+# Licenses
+
+This tool is MIT licensed, but Don't Move is (c) 2013-2014 Steve Richey.
