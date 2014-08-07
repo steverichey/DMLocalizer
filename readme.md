@@ -16,7 +16,7 @@ A localization tool for Don't Move. Creates static art assets for various langua
 5. Save the file to the `images` folder, in the same directory as `DontMove.exe`
 6. Make sure that `locale/default.language` is set to the proper language code for the image you've added.
 7. Start the game and ensure that it works!
-8. Want it to be added to the game proper? [Open an issue](/issues). Thanks for your help!
+8. Want it to be added to the game proper? [Open an issue](./issues). Thanks for your help!
 
 MIT licensed.
 
