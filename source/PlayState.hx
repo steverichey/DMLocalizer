@@ -1,14 +1,23 @@
 package;
 
-import flash.display.BitmapData;
+import flixel.math.FlxPoint;
+import flixel.util.FlxColor;
+import flixel.util.FlxSpriteUtil;
+import openfl.Lib;
+import openfl.display.BitmapData;
+import openfl.geom.Point;
+import openfl.geom.Rectangle;
+import openfl.text.TextFieldType;
+
 import flixel.FlxG;
 import flixel.FlxSprite;
 import flixel.FlxState;
+import flixel.group.FlxGroup;
 import flixel.text.FlxText;
+import flixel.text.FlxTextField;
 import flixel.ui.FlxButton;
 import flixel.math.FlxMath;
 import flixel.system.FlxAssets;
-import openfl.Lib;
 
 import flash.text.Font;
 import flash.text.TextFormat;
@@ -22,6 +31,8 @@ import flash.display.PNGEncoderOptions;
 
 class PlayState extends FlxState
 {
+	// Main state visual stuff.
+	
 	private var info:FlxText;
 	private var text:FlxText;
 	private var edit:FlxButton;
@@ -30,6 +41,23 @@ class PlayState extends FlxState
 	private var styleZenith:FlxButton;
 	private var styleGameOver:FlxButton;
 	private var export:FlxButton;
+	
+	// Text entry dialog stuff.
+	
+	private var textEdit:FlxGroup;
+	private var textEntryWindow:FlxSprite;
+	private var textEntryBox:FlxTextField;
+	private var textOkay:FlxButton;
+	private var textCancel:FlxButton;
+	
+	// Do the bottom buttons work?
+	
+	private var allowBottomButtons:Bool = true;
+	
+	// Allow dragging text
+	
+	private var dragging:Bool = false;
+	private var offset:FlxPoint = FlxPoint.get();
 	
 	// Static, so unaffected by state switch
 	
@@ -71,18 +99,33 @@ class PlayState extends FlxState
 	inline static private var GAMEOVER_MD:UInt = 0xffCF1742;
 	inline static private var GAMEOVER_LO:UInt = 0xffB3193D;
 	
-	// BG color
+	// Colors
 	
 	inline static private var HORRIBLY_UGLY_BROWN:UInt = 0xff1A0F06;
-	
-	// Button colors
-	
 	inline static private var PAINFUL_RED:UInt = 0xffE5240F;
 	inline static private var AWFUL_ORANGE:UInt = 0xffF49F17;
+	
+	// Scan alignments
+	
+	inline static private var VERTICAL:UInt = 0;
+	inline static private var HORIZONTAL:UInt = 1;
+	
+	// Maximum allowed length of input text
+	
+	inline static private var MAX_INPUT_LENGTH:Int = 21;
+	
+	// Button sizes
+	
+	inline static private var BUTTON_WIDTH:Int = 32;
+	inline static private var BUTTON_HEIGHT:Int = 18;
 	
 	override public function create():Void
 	{
 		super.create();
+		
+		// Disable autopause
+		
+		FlxG.autoPause = false;
 		
 		// Don't want black border to be invisible
 		
@@ -92,39 +135,59 @@ class PlayState extends FlxState
 		
 		FlxAssets.FONT_DEFAULT = flixelFontName;
 		
-		// Info line at the top of the screen
-		
-		info = new FlxText(0, -1, FlxG.width, "DM Localizer by STVR");
-		info.alignment = "center";
-		info.alpha = 0.5;
-		add(info);
-		
 		// Create buttons
 		
-		edit = new FlxButton(1, FlxG.height - 38, "Edit", onClickEdit);
-		edit.makeGraphic(32, 18, AWFUL_ORANGE);
+		edit = new FlxButton(1, 1, "Edit", onClickEdit);
+		edit.makeGraphic(BUTTON_WIDTH, BUTTON_HEIGHT, AWFUL_ORANGE);
 		
-		styleTitle = new FlxButton(1, FlxG.height - 19, "TITLE", onClickTitle);
-		styleTitle.makeGraphic(32, 18, PAINFUL_RED);
+		styleTitle = new FlxButton(1, FlxG.height - BUTTON_HEIGHT - 1, "TITLE", onClickTitle);
+		styleTitle.makeGraphic(BUTTON_WIDTH, BUTTON_HEIGHT, PAINFUL_RED);
 		
-		styleLevelUp = new FlxButton(styleTitle.x + styleTitle.width + 1, FlxG.height - 19, "LVL", onClickLevelUp);
-		styleLevelUp.makeGraphic(32, 18, PAINFUL_RED);
+		styleLevelUp = new FlxButton(styleTitle.x + styleTitle.width + 1, FlxG.height - BUTTON_HEIGHT - 1, "LVL", onClickLevelUp);
+		styleLevelUp.makeGraphic(BUTTON_WIDTH, BUTTON_HEIGHT, PAINFUL_RED);
 		
-		styleZenith = new FlxButton(styleLevelUp.x + styleLevelUp.width + 1, FlxG.height - 19, "ZEN", onClickZenith);
-		styleZenith.makeGraphic(32, 18, PAINFUL_RED);
+		styleZenith = new FlxButton(styleLevelUp.x + styleLevelUp.width + 1, FlxG.height - BUTTON_HEIGHT - 1, "ZEN", onClickZenith);
+		styleZenith.makeGraphic(BUTTON_WIDTH, BUTTON_HEIGHT, PAINFUL_RED);
 		
-		styleGameOver = new FlxButton(styleZenith.x + styleLevelUp.width + 1, FlxG.height - 19, "G.O.", onClickGameOver);
-		styleGameOver.makeGraphic(32, 18, PAINFUL_RED);
+		styleGameOver = new FlxButton(styleZenith.x + styleLevelUp.width + 1, FlxG.height - BUTTON_HEIGHT - 1, "G.O.", onClickGameOver);
+		styleGameOver.makeGraphic(BUTTON_WIDTH, BUTTON_HEIGHT, PAINFUL_RED);
 		
-		export = new FlxButton(styleGameOver.x + styleGameOver.width + 1, FlxG.height - 19, "Get", onClickExport);
-		export.makeGraphic(FlxG.width - Std.int(export.x) - 1, 18, AWFUL_ORANGE);
+		export = new FlxButton(styleGameOver.x + styleGameOver.width + 1, FlxG.height - BUTTON_HEIGHT - 1, "Get", onClickExport);
+		export.makeGraphic(FlxG.width - Std.int(export.x) - 1, BUTTON_HEIGHT, AWFUL_ORANGE);
 		
-		add(edit);
-		add(styleTitle);
-		add(styleLevelUp);
-		add(styleZenith);
-		add(styleGameOver);
-		add(export);
+		// Info line at the top of the screen
+		
+		info = new FlxText(edit.x + edit.width + 1, 0, FlxG.width - (edit.x + edit.width + 2), "DM Localizer by STVR");
+		info.alignment = "center";
+		add(info);
+		
+		// Create text edit popup
+		
+		textEdit = new FlxGroup();
+		
+		textEntryWindow = new FlxSprite(12, 12);
+		textEntryWindow.makeGraphic(FlxG.width - 24, 40, PAINFUL_RED);
+		
+		textEntryBox = new FlxTextField(textEntryWindow.x + 2, textEntryWindow.y + 2, Std.int(textEntryWindow.width) - 4, "Enter");
+		textEntryBox.color = FlxColor.BLACK;
+		textEntryBox.textField.wordWrap = false;
+		textEntryBox.textField.multiline = false;
+		textEntryBox.textField.type = TextFieldType.INPUT;
+		textEntryBox.textField.backgroundColor = BLUE_MED;
+		textEntryBox.textField.background = true;
+		
+		textOkay = new FlxButton(textEntryBox.x + 8, textEntryBox.y + 16, "OK", onClickOkay);
+		textOkay.makeGraphic(32, 18, AWFUL_ORANGE);
+		
+		textCancel = new FlxButton(textEntryBox.x + textEntryBox.width - 40, textEntryBox.y + 16, "X", onClickCancel);
+		textCancel.makeGraphic(32, 18, AWFUL_ORANGE);
+		
+		textEdit.add(textEntryWindow);
+		textEdit.add(textEntryBox);
+		textEdit.add(textOkay);
+		textEdit.add(textCancel);
+		
+		textEdit.visible = textEdit.active = false;
 		
 		// Set font to Bebas (used for all drawn text in-game)
 		
@@ -143,13 +206,28 @@ class PlayState extends FlxState
 			case TextStyle.GAMEOVER:	size = FONT_SIZE_GAMEOVER;
 		}
 		
-		text = new FlxText(PADDING_X, 8, FlxG.width, previousText, size);
+		text = new FlxText(0, 0, 0, previousText, size);
 		text.font = new Bebas().fontName;
 		text.textField.antiAliasType = AntiAliasType.ADVANCED;
 		text.textField.sharpness = SHARPNESS;
 		add(text);
 		
-		// assign style to text
+		FlxSpriteUtil.screenCenter(text);
+		
+		// Buttons should be on top of text, if it runs long
+		
+		add(edit);
+		add(styleTitle);
+		add(styleLevelUp);
+		add(styleZenith);
+		add(styleGameOver);
+		add(export);
+		
+		// Text edit dialog should be on top of everything
+		
+		add(textEdit);
+		
+		// Assigns relevant style to text
 		
 		switch (currentStyle)
 		{
@@ -160,19 +238,87 @@ class PlayState extends FlxState
 		}
 	}
 	
-	private function onClickEdit():Void
+	override public function update():Void
 	{
-		// allow edit text popup
+		// Trim input box to prevent stuff from getting cray-cray
+		
+		if (textEntryBox.textField.length > MAX_INPUT_LENGTH)
+		{
+			textEntryBox.text = textEntryBox.text.substr(0, MAX_INPUT_LENGTH);
+		}
+		
+		// Allow repositioning the input box
+		
+		if (dragging && !FlxG.mouse.justPressed)
+		{
+			text.setPosition(FlxG.mouse.x - offset.x, FlxG.mouse.y - offset.y);
+		}
+		
+		if (FlxG.mouse.justPressed && !textEdit.visible)
+		{
+			dragging = true;
+			offset.set(FlxG.mouse.x - text.x, FlxG.mouse.y - text.y);
+		}
+		
+		if (FlxG.mouse.justReleased)
+		{
+			dragging = false;
+		}
+		
+		// Allow pressing "Enter" or "Escape" to exit dialog box
+		
+		if (textEdit.visible)
+		{
+			if (FlxG.keys.justPressed.ENTER)
+			{
+				onClickOkay();
+			}
+			
+			if (FlxG.keys.justPressed.ESCAPE)
+			{
+				onClickCancel();
+			}
+		}
+		
+		super.update();
 	}
 	
-	private function onClickTitle():Void { tryAssign(TextStyle.TITLE); }
-	private function onClickLevelUp():Void { tryAssign(TextStyle.LEVELUP); }
-	private function onClickZenith():Void { tryAssign(TextStyle.ZENITH); }
-	private function onClickGameOver():Void { tryAssign(TextStyle.GAMEOVER); }
+	/**
+	 * Allow the user to enter their own text.
+	 */
+	private function onClickEdit():Void
+	{
+		if (allowBottomButtons)
+		{
+			textEntryBox.text = text.text;
+			textEdit.active = textEdit.visible = true;
+			textEntryBox.textField.selectable = true;
+			FlxG.stage.focus = textEntryBox.textField;
+			
+			if (textEntryBox.textField.length > 0)
+			{
+				textEntryBox.textField.setSelection(0, textEntryBox.textField.text.length);
+			}
+			
+			allowBottomButtons = false;
+		}
+	}
 	
+	/**
+	 * Callbacks for style selections.
+	 */
+	private function onClickTitle():Void    { 	tryAssign(TextStyle.TITLE);    }
+	private function onClickLevelUp():Void  { 	tryAssign(TextStyle.LEVELUP);  }
+	private function onClickZenith():Void   { 	tryAssign(TextStyle.ZENITH);   }
+	private function onClickGameOver():Void { 	tryAssign(TextStyle.GAMEOVER); }
+	
+	/**
+	 * Assigns Style to the current text, but only if the selected style differs from the current one.
+	 * Also resets the state so that the style change will take effect, as this is done in create() (which is lazy of me, I know).
+	 */
 	private function tryAssign(Style:TextStyle):Void
 	{
-		if (currentStyle != Style)
+		if (allowBottomButtons && currentStyle != Style)
 		{
 			currentStyle = Style;
 			previousText = text.text;
@@ -180,11 +326,35 @@ class PlayState extends FlxState
 		}
 	}
 	
+	/**
+	 * Called when Get is clicked. Crops the current text, encodes it as PNG, and opens the file dialog.
+	 */
 	private function onClickExport():Void
 	{
-		var bytearray:ByteArray = encodeBitmapDataToPNG(text.pixels);
+		var bitmapdata:BitmapData = cropBitmapData(text.pixels);
+		var bytearray:ByteArray = encodeBitmapDataToPNG(bitmapdata);
 		
 		openSaveFileDialog(bytearray, getFileName());
+	}
+	
+	/**
+	 * Callback for the text edit OK button.
+	 */
+	private function onClickOkay():Void
+	{
+		previousText = textEntryBox.text.toUpperCase();
+		FlxG.resetState();
+	}
+	
+	/**
+	 * Callback for the text edit X button.
+	 */
+	private function onClickCancel():Void
+	{
+		textEntryBox.text = " ";
+		FlxG.stage.focus = null;
+		textEdit.visible = textEdit.active = false;
+		allowBottomButtons = true;
 	}
 	
 	/**
@@ -208,17 +378,149 @@ class PlayState extends FlxState
 		return Image.clone().encode(Image.rect, new PNGEncoderOptions());
 	}
 	
+	/**
+	 * Takes BitmapData, crops away empty pixel rows and columns, and returns a new cropped BitmapData.
+	 * 
+	 * @param	Data	The BitmapData to crop.
+	 */
+	private function cropBitmapData(Data:BitmapData):BitmapData
+	{
+		var cropx:Int = 0;
+		var cropy:Int = 0;
+		var cropwidth:Int = Data.width;
+		var cropheight:Int = Data.height;
+		
+		var hasPixels:Bool = false;
+		
+		// Scan bitmpadata for initial x and width
+		
+		var w:Int = Data.width;
+		var xPos:Int = 0;
+		
+		while (xPos < w)
+		{
+			hasPixels = scanRow(Data, xPos, VERTICAL);
+			
+			if (hasPixels)
+			{
+				cropx = xPos;
+				break;
+			}
+			
+			xPos++;
+		}
+		
+		xPos = w;
+		
+		while (xPos > 0)
+		{
+			xPos--;
+			
+			hasPixels = scanRow(Data, xPos, VERTICAL);
+			
+			if (hasPixels)
+			{
+				cropwidth = 1 + xPos - cropx;
+				break;
+			}
+		}
+		
+		// Scan bitmapdata for initial y and height
+		
+		var h:Int = Data.height;
+		var yPos:Int = 0;
+		
+		while (yPos < h)
+		{
+			hasPixels = scanRow(Data, yPos, HORIZONTAL);
+			
+			if (hasPixels)
+			{
+				cropy = yPos;
+				break;
+			}
+			
+			yPos++;
+		}
+		
+		yPos = h;
+		
+		while (yPos > 0)
+		{
+			yPos--;
+			
+			hasPixels = scanRow(Data, yPos, HORIZONTAL);
+			
+			if (hasPixels)
+			{
+				cropheight = 1 + yPos - cropy;
+				break;
+			}
+		}
+		
+		var dest:BitmapData = new BitmapData(cropwidth, cropheight, true, 0);
+		var rect:Rectangle = new Rectangle(cropx, cropy, cropwidth, cropheight);
+		var point:Point = new Point(0, 0);
+		dest.copyPixels(Data, rect, point);
+		
+		return dest;
+	}
+	
+	/**
+	 * Scans a single vertical or horizontal row of a BitmapData for pixels. Returns true if any pixels are found.
+	 * 
+	 * @param	Data		The BitmapData to scan.
+	 * @param	Position	The X or Y position to scan.
+	 * @param	Alignment	Either VERTICAL or HORIZONTAL, will scan in that direction.
+	 */
+	private function scanRow(Data:BitmapData, Position:UInt, Alignment:UInt = VERTICAL):Bool
+	{
+		var result:Bool = false;
+		
+		var thisPixel:Array<UInt> = [];
+		var otherPos:UInt = 0;
+		var isVert:Bool = Alignment == VERTICAL;
+		var max:UInt = isVert ? Data.height : Data.width;
+		
+		while (otherPos < max)
+		{
+			thisPixel = isVert ? [Position, otherPos] : [otherPos, Position];
+			
+			if (Data.getPixel32(thisPixel[0], thisPixel[1]) != 0)
+			{
+				result = true;
+				break;
+			}
+			
+			otherPos++;
+		}
+		
+		return result;
+	}
+	
+	/**
+	 * Returns the appropriate file name for the type of object that is being saved.
+	 */
 	private function getFileName():String
 	{
 		switch (currentStyle)
 		{
-			case TextStyle.TITLE: 		return FlxG.random.bool() ? "dont_en.png" : "move_en.png";
-			case TextStyle.LEVELUP: 	return "levelup_en.png";
-			case TextStyle.ZENITH: 		return "zenith_en.png";
-			case TextStyle.GAMEOVER: 	return "gameover_en.png";
+			case TextStyle.TITLE: 		return FlxG.random.bool() ? "dont_la.png" : "move_la.png";
+			case TextStyle.LEVELUP: 	return "levelup_la.png";
+			case TextStyle.ZENITH: 		return "zenith_la.png";
+			case TextStyle.GAMEOVER: 	return "gameover_la.png";
 		}
 	}
 	
+	/**
+	 * Converts a FlxSprite's pixels data to reflect the style of the selected colors.
+	 * 
+	 * @param	Obj				The FlxSprite to edit.
+	 * @param	NormalColor		The color of the core of the letters.
+	 * @param	HiColor			The color of the letter highlights.
+	 * @param	MedHiColor		The color that transitions from the highlights to the lowlights.
+	 * @param	LowColor		The color of the letter lowlights.
+	 */
 	private function styleShift(Obj:FlxSprite, NormalColor:UInt, HiColor:UInt, MedHiColor:UInt, LowColor:UInt):Void
 	{
 		var p:BitmapData = Obj.pixels;
@@ -313,6 +615,9 @@ class PlayState extends FlxState
 	}
 }
 
+/**
+ * Holds the list of potential letter styles.
+ */
 enum TextStyle
 {
 	TITLE;
