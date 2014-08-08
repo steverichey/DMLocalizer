@@ -8,14 +8,18 @@
 <script type="text/javascript" src="http://cdn.jquerytools.org/1.2.7/full/jquery.tools.min.js"></script>
 <script type="text/javascript">
 $(document).ready(function(){flashembed("flashgame", "data/dml.swf");});
+function setFocusOnFlash() {
+	document.getElementById("flashgameobject").tabIndex = 1234;
+	document.getElementById("flashgameobject").focus();
+}
 </script>
 <style>
 #flashgame {width: 640px;height:480px;margin-left:auto;margin-right:auto;}
 #about {width:640px;margin-left:auto;margin-right:auto;color:#EEEEEE;text-align:center;}
 </style>
 </head>	
-<body bgcolor="#111111">
+<body bgcolor="#111111" onload="setTimeout(setFocusOnFlash, 1)">
 <div id="flashgame"></div>
-<div id="about"><a href="https://github.com/steverichey/DMLocalizer">Source</a></div>
+<div id="about">This is a simple tool to make localizing Don't Move a bit easier. Use "Edit" to change the text, set the style with the red buttons, and download a PNG of the text with "Get". Long text may appear clipped; the entire text will be exported. You can use the mouse to move the text around and preview how it will look. <a href="https://github.com/steverichey/DMLocalizer">[Source]</a></div>
 </body>
 </html>
