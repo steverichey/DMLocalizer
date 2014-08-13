@@ -18,14 +18,13 @@ import flixel.text.FlxTextField;
 import flixel.ui.FlxButton;
 import flixel.math.FlxMath;
 import flixel.system.FlxAssets;
+import flixel.util.FlxColor;
 
 import flash.text.Font;
 import flash.text.TextFormat;
 import flash.text.TextRenderer;
 import flash.text.AntiAliasType;
-import flash.net.FileReference;
 import flash.utils.ByteArray;
-import flash.display.PNGEncoderOptions;
 
 @:font("assets/BebasNeue.ttf") private class Bebas extends Font {}
 
@@ -41,18 +40,24 @@ class PlayState extends FlxState
 	private var styleZenith:FlxButton;
 	private var styleGameOver:FlxButton;
 	private var export:FlxButton;
+	private var alphaDisplay:FlxText;
 	
 	// Text entry dialog stuff.
 	
 	private var textEdit:FlxGroup;
 	private var textEntryWindow:FlxSprite;
 	private var textEntryBox:FlxTextField;
+	private var textLength:FlxText;
 	private var textOkay:FlxButton;
 	private var textCancel:FlxButton;
 	
 	// Do the bottom buttons work?
 	
 	private var allowBottomButtons:Bool = true;
+	
+	// Should the text be redrawn this frame?
+	
+	private var textDirty:Bool = false;
 	
 	// Allow dragging text
 	
@@ -64,6 +69,7 @@ class PlayState extends FlxState
 	private static var currentStyle:TextStyle = TextStyle.TITLE;
 	private static var previousText:String = "HELLO";
 	private static var flixelFontName:String = FlxAssets.FONT_DEFAULT;
+	private static var alphaCrop:Float = 0.44;
 	
 	inline static private var PADDING_X:Int = -3;
 	inline static private var PADDING_Y:Int = -13;
@@ -71,7 +77,7 @@ class PlayState extends FlxState
 	inline static private var FONT_SIZE_LEVEL:UInt = 36;
 	inline static private var FONT_SIZE_ZENITH:UInt = 24;
 	inline static private var FONT_SIZE_GAMEOVER:UInt = 54;
-	inline static private var SHARPNESS:Int = 400;
+	inline static private var SHARPNESS:Int = 100;
 	
 	// Title colors
 	
@@ -105,19 +111,25 @@ class PlayState extends FlxState
 	inline static private var PAINFUL_RED:UInt = 0xffE5240F;
 	inline static private var AWFUL_ORANGE:UInt = 0xffF49F17;
 	
-	// Scan alignments
-	
-	inline static private var VERTICAL:UInt = 0;
-	inline static private var HORIZONTAL:UInt = 1;
-	
 	// Maximum allowed length of input text
 	
-	inline static private var MAX_INPUT_LENGTH:Int = 21;
+	inline static private var MAX_INPUT_LENGTH:Int = 42;
 	
 	// Button sizes
 	
 	inline static private var BUTTON_WIDTH:Int = 32;
 	inline static private var BUTTON_HEIGHT:Int = 18;
+	
+	// How quickly the alpha threshold changes
+	
+	inline static private var ALPHA_STEP:Float = 0.01;
+	
+	#if debug
+	/**
+	 * Debug stuff
+	 */
+	private var testInt:Int = 0;
+	#end
 	
 	override public function create():Void
 	{
@@ -159,32 +171,41 @@ class PlayState extends FlxState
 		
 		info = new FlxText(edit.x + edit.width + 1, 0, FlxG.width - (edit.x + edit.width + 2), "DM Localizer by STVR");
 		info.alignment = "center";
-		add(info);
+		
+		// Alpha crop info towards the bottom of ths creen
+		
+		alphaDisplay = new FlxText(0, FlxG.height - BUTTON_HEIGHT - 13, FlxG.width, alphaText());
+		alphaDisplay.alignment = "center";
 		
 		// Create text edit popup
 		
 		textEdit = new FlxGroup();
 		
 		textEntryWindow = new FlxSprite(12, 12);
-		textEntryWindow.makeGraphic(FlxG.width - 24, 40, PAINFUL_RED);
+		textEntryWindow.makeGraphic(FlxG.width - 24, 52, PAINFUL_RED);
 		
 		textEntryBox = new FlxTextField(textEntryWindow.x + 2, textEntryWindow.y + 2, Std.int(textEntryWindow.width) - 4, "Enter");
 		textEntryBox.color = FlxColor.BLACK;
-		textEntryBox.textField.wordWrap = false;
-		textEntryBox.textField.multiline = false;
+		textEntryBox.textField.wordWrap = true;
+		textEntryBox.textField.multiline = true;
 		textEntryBox.textField.type = TextFieldType.INPUT;
 		textEntryBox.textField.backgroundColor = BLUE_MED;
 		textEntryBox.textField.background = true;
+		textEntryBox.height *= 2;
 		
-		textOkay = new FlxButton(textEntryBox.x + 8, textEntryBox.y + 16, "OK", onClickOkay);
+		textOkay = new FlxButton(textEntryBox.x + 8, textEntryBox.y + textEntryBox.height + 2, "OK", onClickOkay);
 		textOkay.makeGraphic(32, 18, AWFUL_ORANGE);
 		
-		textCancel = new FlxButton(textEntryBox.x + textEntryBox.width - 40, textEntryBox.y + 16, "X", onClickCancel);
+		textCancel = new FlxButton(textEntryBox.x + textEntryBox.width - 40, textOkay.y, "X", onClickCancel);
 		textCancel.makeGraphic(32, 18, AWFUL_ORANGE);
+		
+		textLength = new FlxText(textOkay.x, textOkay.y, textCancel.x + textCancel.width - textOkay.x, "0");
+		textLength.alignment = "center";
 		
 		textEdit.add(textEntryWindow);
 		textEdit.add(textEntryBox);
 		textEdit.add(textOkay);
+		textEdit.add(textLength);
 		textEdit.add(textCancel);
 		
 		textEdit.visible = textEdit.active = false;
@@ -210,6 +231,14 @@ class PlayState extends FlxState
 		text.font = new Bebas().fontName;
 		text.textField.antiAliasType = AntiAliasType.ADVANCED;
 		text.textField.sharpness = SHARPNESS;
+		
+		if (Utils.hasReturn(previousText))
+		{
+			var format:TextFormat = new TextFormat();
+			format.leading = -16;
+			text.textField.setTextFormat(format);
+		}
+		
 		add(text);
 		
 		FlxSpriteUtil.screenCenter(text);
@@ -222,20 +251,18 @@ class PlayState extends FlxState
 		add(styleZenith);
 		add(styleGameOver);
 		add(export);
+		add(info);
+		add(alphaDisplay);
 		
 		// Text edit dialog should be on top of everything
 		
 		add(textEdit);
 		
-		// Assigns relevant style to text
+		textDirty = true;
 		
-		switch (currentStyle)
-		{
-			case TextStyle.TITLE: 		styleShift(text, BLUE_MED, BLUE_LITE, BLUE_LITE_MED, BLUE_DARK);
-			case TextStyle.LEVELUP: 	styleShift(text, LEVEL_YELLOW, LEVEL_LITE, LEVEL_LITE_MED, LEVEL_DARK);
-			case TextStyle.ZENITH: 		styleShift(text, ZENITH_MD, ZENITH_HI, ZENITH_HI, ZENITH_LO);
-			case TextStyle.GAMEOVER: 	styleShift(text, GAMEOVER_MD, GAMEOVER_HI, GAMEOVER_HI, GAMEOVER_LO);
-		}
+		#if debug
+		FlxG.watch.add(this, "testInt");
+		#end
 	}
 	
 	override public function update():Void
@@ -245,6 +272,13 @@ class PlayState extends FlxState
 		if (textEntryBox.textField.length > MAX_INPUT_LENGTH)
 		{
 			textEntryBox.text = textEntryBox.text.substr(0, MAX_INPUT_LENGTH);
+		}
+		
+		// Only allow two lines in the input box
+		
+		if (Utils.occurancesOf(textEntryBox.text, "\r") > 1)
+		{
+			textEntryBox.text = Utils.removeLastOccuranceOf(textEntryBox.text, "\r");
 		}
 		
 		// Allow repositioning the input box
@@ -271,16 +305,48 @@ class PlayState extends FlxState
 		{
 			if (FlxG.keys.justPressed.ENTER)
 			{
-				onClickOkay();
+				if (Utils.hasReturn(textEntryBox.text))
+				{
+					// onClickOkay(); // this doesn't work great
+				}
 			}
 			
 			if (FlxG.keys.justPressed.ESCAPE)
 			{
 				onClickCancel();
 			}
+			
+			// Update textlength object.
+			
+			textLength.text = Std.string(textEntryBox.textField.length);
+		}
+		
+		if (FlxG.keys.pressed.LEFT)
+		{
+			alphaCrop -= ALPHA_STEP;
+			textDirty = true;
+		}
+		
+		if (FlxG.keys.pressed.RIGHT)
+		{
+			alphaCrop += ALPHA_STEP;
+			textDirty = true;
+		}
+		
+		if (textDirty)
+		{
+			alphaCrop = FlxMath.bound(alphaCrop, 0.01, 0.99);
+			alphaDisplay.text = alphaText();
+			text.drawFrame(true);
+			applyStyleToText();
 		}
 		
 		super.update();
+	}
+	
+	private function alphaText():String
+	{
+		return "< Alpha Threshold: " + FlxMath.roundDecimal(alphaCrop, 2) + " >";
 	}
 	
 	/**
@@ -293,6 +359,7 @@ class PlayState extends FlxState
 			textEntryBox.text = text.text;
 			textEdit.active = textEdit.visible = true;
 			textEntryBox.textField.selectable = true;
+			textEntryBox.textField.background = true;
 			FlxG.stage.focus = textEntryBox.textField;
 			
 			if (textEntryBox.textField.length > 0)
@@ -331,10 +398,10 @@ class PlayState extends FlxState
 	 */
 	private function onClickExport():Void
 	{
-		var bitmapdata:BitmapData = cropBitmapData(text.pixels);
-		var bytearray:ByteArray = encodeBitmapDataToPNG(bitmapdata);
+		var bitmapdata:BitmapData = Utils.cropBitmapData(text.pixels);
+		var bytearray:ByteArray = Utils.encodeBitmapDataToPNG(bitmapdata);
 		
-		openSaveFileDialog(bytearray, getFileName());
+		Utils.openSaveFileDialog(bytearray, Utils.getFileName(currentStyle));
 	}
 	
 	/**
@@ -342,6 +409,11 @@ class PlayState extends FlxState
 	 */
 	private function onClickOkay():Void
 	{
+		if (Utils.lastCharacter(textEntryBox.text) == "\r")
+		{
+			textEntryBox.text = Utils.removeLastOccuranceOf(textEntryBox.text, "\r");
+		}
+		
 		previousText = textEntryBox.text.toUpperCase();
 		FlxG.resetState();
 	}
@@ -354,162 +426,8 @@ class PlayState extends FlxState
 		textEntryBox.text = " ";
 		FlxG.stage.focus = null;
 		textEdit.visible = textEdit.active = false;
+		textEntryBox.textField.background = false;
 		allowBottomButtons = true;
-	}
-	
-	/**
-	 * Just a wrapper for FileReference, this opens a save file dialog in Flash.
-	 * 
-	 * @param	Data			The data to save, stored as a ByteArray.
-	 * @param	DefaultFileName	The default name to be shown in the dialog.
-	 */
-	private function openSaveFileDialog(Data:ByteArray, DefaultFileName:String):Void
-	{
-		new FileReference().save(Data, DefaultFileName);
-	}
-	
-	/**
-	 * Converts BitmapData to a ByteArray encoded as PNG. Mostly a wrapper for BitmapData.encode()
-	 * 
-	 * @param	Image	The BitmapData to encode. This could be, for example, a FlxSprite's pixels.
-	 */
-	private function encodeBitmapDataToPNG(Image:BitmapData):ByteArray
-	{
-		return Image.clone().encode(Image.rect, new PNGEncoderOptions());
-	}
-	
-	/**
-	 * Takes BitmapData, crops away empty pixel rows and columns, and returns a new cropped BitmapData.
-	 * 
-	 * @param	Data	The BitmapData to crop.
-	 */
-	private function cropBitmapData(Data:BitmapData):BitmapData
-	{
-		var cropx:Int = 0;
-		var cropy:Int = 0;
-		var cropwidth:Int = Data.width;
-		var cropheight:Int = Data.height;
-		
-		var hasPixels:Bool = false;
-		
-		// Scan bitmpadata for initial x and width
-		
-		var w:Int = Data.width;
-		var xPos:Int = 0;
-		
-		while (xPos < w)
-		{
-			hasPixels = scanRow(Data, xPos, VERTICAL);
-			
-			if (hasPixels)
-			{
-				cropx = xPos;
-				break;
-			}
-			
-			xPos++;
-		}
-		
-		xPos = w;
-		
-		while (xPos > 0)
-		{
-			xPos--;
-			
-			hasPixels = scanRow(Data, xPos, VERTICAL);
-			
-			if (hasPixels)
-			{
-				cropwidth = 1 + xPos - cropx;
-				break;
-			}
-		}
-		
-		// Scan bitmapdata for initial y and height
-		
-		var h:Int = Data.height;
-		var yPos:Int = 0;
-		
-		while (yPos < h)
-		{
-			hasPixels = scanRow(Data, yPos, HORIZONTAL);
-			
-			if (hasPixels)
-			{
-				cropy = yPos;
-				break;
-			}
-			
-			yPos++;
-		}
-		
-		yPos = h;
-		
-		while (yPos > 0)
-		{
-			yPos--;
-			
-			hasPixels = scanRow(Data, yPos, HORIZONTAL);
-			
-			if (hasPixels)
-			{
-				cropheight = 1 + yPos - cropy;
-				break;
-			}
-		}
-		
-		var dest:BitmapData = new BitmapData(cropwidth, cropheight, true, 0);
-		var rect:Rectangle = new Rectangle(cropx, cropy, cropwidth, cropheight);
-		var point:Point = new Point(0, 0);
-		dest.copyPixels(Data, rect, point);
-		
-		return dest;
-	}
-	
-	/**
-	 * Scans a single vertical or horizontal row of a BitmapData for pixels. Returns true if any pixels are found.
-	 * 
-	 * @param	Data		The BitmapData to scan.
-	 * @param	Position	The X or Y position to scan.
-	 * @param	Alignment	Either VERTICAL or HORIZONTAL, will scan in that direction.
-	 */
-	private function scanRow(Data:BitmapData, Position:UInt, Alignment:UInt = VERTICAL):Bool
-	{
-		var result:Bool = false;
-		
-		var thisPixel:Array<UInt> = [];
-		var otherPos:UInt = 0;
-		var isVert:Bool = Alignment == VERTICAL;
-		var max:UInt = isVert ? Data.height : Data.width;
-		
-		while (otherPos < max)
-		{
-			thisPixel = isVert ? [Position, otherPos] : [otherPos, Position];
-			
-			if (Data.getPixel32(thisPixel[0], thisPixel[1]) != 0)
-			{
-				result = true;
-				break;
-			}
-			
-			otherPos++;
-		}
-		
-		return result;
-	}
-	
-	/**
-	 * Returns the appropriate file name for the type of object that is being saved.
-	 */
-	private function getFileName():String
-	{
-		switch (currentStyle)
-		{
-			case TextStyle.TITLE: 		return FlxG.random.bool() ? "dont_la.png" : "move_la.png";
-			case TextStyle.LEVELUP: 	return "levelup_la.png";
-			case TextStyle.ZENITH: 		return "zenith_la.png";
-			case TextStyle.GAMEOVER: 	return "gameover_la.png";
-		}
 	}
 	
 	/**
@@ -526,26 +444,7 @@ class PlayState extends FlxState
 		var p:BitmapData = Obj.pixels;
 		var w:Int = p.width;
 		var h:Int = p.height;
-		
-		var active:UInt = 0;
-		var left:UInt = 0;
-		var right:UInt = 0;
-		var above:UInt = 0;
-		var below:UInt = 0;
-		
-		var twoAbove:UInt = 0;
-		var threeAbove:UInt = 0;
-		
-		var topleft:UInt = 0;
-		var topRight:UInt = 0;
-		var bottomLeft:UInt = 0;
-		var bottomRight:UInt = 0;
-		
-		var onRight:Bool = false;
-		var onLeft:Bool = false;
-		var onBottom:Bool = false;
-		var onTop:Bool = false;
-		var hasPixel:Bool = false;
+		var family:PixelFamily = new PixelFamily();
 		
 		var xPos:Int = 0;
 		var yPos:Int = 0;
@@ -554,54 +453,11 @@ class PlayState extends FlxState
 		{
 			while (xPos < w)
 			{
-				active = p.getPixel32(xPos, yPos);
-				hasPixel = active != 0;
+				family.autoSet(p, xPos, yPos);
 				
-				if (hasPixel)
+				if (family.hasPixel)
 				{
-					left = p.getPixel32(xPos - 1, yPos);
-					right = p.getPixel32(xPos + 1, yPos);
-					above = p.getPixel32(xPos, yPos - 1);
-					below = p.getPixel32(xPos, yPos + 1);
-					
-					onRight = right == 0;
-					onLeft = left == 0;
-					onBottom = below == 0;
-					onTop = above == 0;
-					
-					if (onLeft || onTop)
-					{
-						twoAbove = p.getPixel32(xPos, yPos - 2);
-						threeAbove = p.getPixel32(xPos, yPos - 3);
-						
-						if (threeAbove == HiColor)
-						{
-							p.setPixel32(xPos, yPos, MedHiColor);
-						}
-						else if (threeAbove == MedHiColor || threeAbove == LowColor || threeAbove == NormalColor)
-						{
-							p.setPixel32(xPos, yPos, LowColor);
-						}
-						else
-						{
-							p.setPixel32(xPos, yPos, HiColor);
-						}
-					}
-					else if (onRight || onBottom)
-					{
-						if (above == HiColor)
-						{
-							p.setPixel32(xPos, yPos, MedHiColor);
-						}
-						else
-						{
-							p.setPixel32(xPos, yPos, LowColor);
-						}
-					}
-					else
-					{
-						p.setPixel32(xPos, yPos, NormalColor);
-					}
+					applyStyle(currentStyle, family, p, NormalColor, HiColor, MedHiColor, LowColor);
 				}
 				
 				xPos++;
@@ -613,15 +469,157 @@ class PlayState extends FlxState
 		
 		Obj.pixels = p;
 	}
-}
-
-/**
- * Holds the list of potential letter styles.
- */
-enum TextStyle
-{
-	TITLE;
-	LEVELUP;
-	ZENITH;
-	GAMEOVER;
+	
+	private function applyStyle(Style:TextStyle, F:PixelFamily, D:BitmapData, Norm:FlxColor, Hi:FlxColor, MedHi:FlxColor, Lo:FlxColor):Void
+	{
+		if (isAlphaLessThan(F, alphaCrop))
+		{
+			D.setPixel32(F.x, F.y, 0);
+		}
+		else if (isCenter(F))
+		{
+			D.setPixel32(F.x, F.y, Norm);
+		}
+		else
+		{
+			// Highlights vary greatly between styles
+			
+			switch (Style)
+			{
+				case TextStyle.TITLE:
+					if (isTop(F)) 		set(D, F.x, F.y, Hi);
+					else if (isLeft(F))
+					{
+						if (F.above == Hi || F.twoAbove == Hi)
+						{
+							set(D, F.x, F.y, MedHi);
+						}
+						else
+						{
+							set(D, F.x, F.y, Lo);
+						}
+					}
+					else if (isBottom(F)) 	set(D, F.x, F.y, Lo);
+					else if (isRight(F))
+					{
+						if (!isClear(F.bottomRight) || !isClear(F.rightOneDownTwo))
+						{
+							set(D, F.x, F.y, MedHi);
+						}
+						else if (F.twoAbove == Hi)
+						{
+							set(D, F.x, F.y, MedHi);
+						}
+						else if (F.twoAbove == 0)
+						{
+							set(D, F.x, F.y, Hi);
+						}
+						else
+						{
+							set(D, F.x, F.y, Lo);
+						}
+					}
+				case TextStyle.LEVELUP:
+					if (isTop(F)) set(D, F.x, F.y, Hi);
+					else if (isBottom(F)) set(D, F.x, F.y, Lo);
+					else if (isLeft(F))
+					{
+						if (isClear(F.fourAbove))
+						{
+							set(D, F.x, F.y, Hi);
+						}
+						else if (F.twoAbove == Hi)
+						{
+							set(D, F.x, F.y, MedHi);
+						}
+						else
+						{
+							set(D, F.x, F.y, Lo);
+						}
+					}
+					else // isRight
+					{
+						if (F.above == Hi)
+						{
+							set(D, F.x, F.y, MedHi);
+						}
+						else
+						{
+							set(D, F.x, F.y, Lo);
+						}
+					}
+				case TextStyle.ZENITH:
+					if (isLeft(F) || isTop(F))
+					{
+						set(D, F.x, F.y, Hi);
+					}
+					else
+					{
+						set(D, F.x, F.y, Lo);
+					}
+				case TextStyle.GAMEOVER:
+					if (isLeft(F) || isTop(F))
+					{
+						set(D, F.x, F.y, Hi);
+					}
+					else
+					{
+						set(D, F.x, F.y, Lo);
+					}
+			}
+		}
+	}
+	
+	private function isCenter(Family:PixelFamily):Bool
+	{
+		return !isTop(Family) && !isLeft(Family) && !isRight(Family) && !isBottom(Family);
+	}
+	
+	private function isTop(Family:PixelFamily):Bool
+	{
+		return isClear(Family.above);
+	}
+	
+	private function isLeft(Family:PixelFamily):Bool
+	{
+		return isClear(Family.left);
+	}
+	
+	private function isRight(Family:PixelFamily):Bool
+	{
+		return isClear(Family.right);
+	}
+	
+	private function isBottom(Family:PixelFamily):Bool
+	{
+		return isClear(Family.below);
+	}
+	
+	private function isAlphaLessThan(Family:PixelFamily, Value:Float):Bool
+	{
+		return Family.active.alphaFloat < Value;
+	}
+	
+	private function isClear(Color:FlxColor):Bool
+	{
+		return Color.alphaFloat < alphaCrop;
+	}
+	
+	private function set(Data:BitmapData, X:UInt, Y:UInt, Color:UInt):Void
+	{
+		return Data.setPixel32(X, Y, Color);
+	}
+	
+	private function applyStyleToText():Void
+	{
+		// Assigns relevant style to text
+		
+		switch (currentStyle)
+		{
+			case TextStyle.TITLE: 		styleShift(text, BLUE_MED, BLUE_LITE, BLUE_LITE_MED, BLUE_DARK);
+			case TextStyle.LEVELUP: 	styleShift(text, LEVEL_YELLOW, LEVEL_LITE, LEVEL_LITE_MED, LEVEL_DARK);
+			case TextStyle.ZENITH: 		styleShift(text, ZENITH_MD, ZENITH_HI, ZENITH_HI, ZENITH_LO);
+			case TextStyle.GAMEOVER: 	styleShift(text, GAMEOVER_MD, GAMEOVER_HI, GAMEOVER_HI, GAMEOVER_LO);
+		}
+	}
 }
