@@ -73,10 +73,17 @@ class PlayState extends FlxState
 	
 	inline static private var PADDING_X:Int = -3;
 	inline static private var PADDING_Y:Int = -13;
-	inline static private var FONT_SIZE_TITLE:UInt = 66;
+	
+	inline static private var FONT_SIZE_TITLE:UInt = 62;
 	inline static private var FONT_SIZE_LEVEL:UInt = 36;
 	inline static private var FONT_SIZE_ZENITH:UInt = 24;
-	inline static private var FONT_SIZE_GAMEOVER:UInt = 54;
+	inline static private var FONT_SIZE_GAMEOVER:UInt = 58;
+	
+	inline static private var LEAD_SIZE_TITLE:UInt = -19;
+	inline static private var LEAD_SIZE_LEVEL:UInt = -8;
+	inline static private var LEAD_SIZE_ZENITH:UInt = -4;
+	inline static private var LEAD_SIZE_GAMEOVER:UInt = -17;
+	
 	inline static private var SHARPNESS:Int = 100;
 	
 	// Title colors
@@ -231,11 +238,22 @@ class PlayState extends FlxState
 		text.font = new Bebas().fontName;
 		text.textField.antiAliasType = AntiAliasType.ADVANCED;
 		text.textField.sharpness = SHARPNESS;
+		text.alignment = "center";
 		
 		if (Utils.hasReturn(previousText))
 		{
 			var format:TextFormat = new TextFormat();
-			format.leading = -16;
+			var lead:Int = 0;
+			
+			switch (currentStyle)
+			{
+				case TextStyle.TITLE:  		lead = LEAD_SIZE_TITLE;
+				case TextStyle.LEVELUP: 	lead = LEAD_SIZE_LEVEL;
+				case TextStyle.ZENITH: 		lead = LEAD_SIZE_ZENITH;
+				case TextStyle.GAMEOVER:	lead = LEAD_SIZE_GAMEOVER;
+			}
+			
+			format.leading = lead;
 			text.textField.setTextFormat(format);
 		}
 		
