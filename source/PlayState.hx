@@ -26,7 +26,13 @@ import flash.text.TextRenderer;
 import flash.text.AntiAliasType;
 import flash.utils.ByteArray;
 
-@:font("assets/BebasNeue.ttf") private class Bebas extends Font {}
+// All static text in Don't Move uses Bebas Neue.
+
+@:font("assets/BebasNeue.ttf") private class Bebas extends Font { }
+
+// Nokia Sans doesn't support Bulgarian letters, but Bebas and Arial do, so we need this.
+
+@:font("assets/fonts/arial.ttf") private class Arial extends Font {}
 
 class PlayState extends FlxState
 {
@@ -142,6 +148,10 @@ class PlayState extends FlxState
 	{
 		super.create();
 		
+		// Register Arial font
+		
+		Font.registerFont(Arial);
+		
 		// Disable autopause
 		
 		FlxG.autoPause = false;
@@ -152,6 +162,7 @@ class PlayState extends FlxState
 		
 		// Reset default font to Nokia FC
 		
+		FlxAssets.FONT_DEFAULT = flixelFontName;
 		FlxAssets.FONT_DEFAULT = flixelFontName;
 		
 		// Create buttons
@@ -192,6 +203,7 @@ class PlayState extends FlxState
 		textEntryWindow.makeGraphic(FlxG.width - 24, 52, PAINFUL_RED);
 		
 		textEntryBox = new FlxTextField(textEntryWindow.x + 2, textEntryWindow.y + 2, Std.int(textEntryWindow.width) - 4, "Enter");
+		textEntryBox.font = new Arial().fontName;
 		textEntryBox.color = FlxColor.BLACK;
 		textEntryBox.textField.wordWrap = true;
 		textEntryBox.textField.multiline = true;
@@ -416,10 +428,13 @@ class PlayState extends FlxState
 	 */
 	private function onClickExport():Void
 	{
-		var bitmapdata:BitmapData = Utils.cropBitmapData(text.pixels);
-		var bytearray:ByteArray = Utils.encodeBitmapDataToPNG(bitmapdata);
-		
-		Utils.openSaveFileDialog(bytearray, Utils.getFileName(currentStyle));
+		if (allowBottomButtons)
+		{
+			var bitmapdata:BitmapData = Utils.cropBitmapData(text.pixels);
+			var bytearray:ByteArray = Utils.encodeBitmapDataToPNG(bitmapdata);
+			
+			Utils.openSaveFileDialog(bytearray, Utils.getFileName(currentStyle));
+		}
 	}
 	
 	/**
