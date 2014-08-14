@@ -7,10 +7,18 @@
 <meta http-equiv="X-UA-Compatible" content="IE=Edge">
 <script type="text/javascript" src="http://cdn.jquerytools.org/1.2.7/full/jquery.tools.min.js"></script>
 <script type="text/javascript">
-$(document).ready(function(){flashembed("flashgame", "data/dml.swf");});
-function setFocusOnFlash() {
-	document.getElementById("flashgame").tabIndex = 1234;
-	document.getElementById("flashgame").focus();
+$(document).ready(function()
+{
+	flashembed("flashgame", {
+		src: "data/dml.swf",
+		id: "flashid"
+	});
+});
+
+function setFocusOnFlash()
+{
+	document.getElementById("flashid").tabIndex = 1234;
+	document.getElementById("flashid").focus();
 }
 </script>
 <style>
