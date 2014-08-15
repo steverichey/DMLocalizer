@@ -24,6 +24,7 @@ A localization tool for [Don't Move](http://www.steverichey.com/dontmove). Creat
 
 * You can use the mouse to move the words around.
 * The left and right arrow keys adjust the alpha threshold, adjust it if the text doesn't look right.
+* Generated files will only work with version 1.4 of Don't Move, which hasn't officially been released yet! If you're itching to try something out, shoot me an email.
 
 # Building
 
