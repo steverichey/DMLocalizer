@@ -10,7 +10,7 @@ A localization tool for [Don't Move](http://dontmove.co/). Creates static art as
 4. Click on the button corresponding to the desired style.
 5. Adjust the alpha threshold with the left/right arrow keys.
 6. Click *Get* and save the file. Repeat for the title, level up, zenith, and game over translations.
-7. [Open an issue](./../../issues) with translations for the rest of the in-game text (see [here](https://github.com/steverichey/DMLocalizer/issues/1)) for example.
+7. [Open an issue](./../../issues) with translations for the rest of the in-game text (see [here](https://github.com/steverichey/DMLocalizer/issues/1) for example).
 8. You'll be included in the credits below, and in the game's manual!
 
 # Notes
@@ -32,4 +32,4 @@ Portuguese: Luís Alves
 
 # Licenses
 
-This tool is MIT licensed, but Don't Move is (c) 2013-2014 Steve Richey.
+This tool and its source code is shared under an [MIT license](https://en.wikipedia.org/wiki/MIT_License). See [license.md](./license.md) for details. Don't Move is (c) 2013-2015 Steve Richey.
