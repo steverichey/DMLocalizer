@@ -27,6 +27,8 @@ This is hosted online, but if you run `lime build flash` from the command line y
 
 Danish: Anders Nissen
 Dutch: Justin Tlozoot Post
+Italian: Luca Carbone
+Portuguese: Luís Alves
 
 # Licenses
 
