@@ -32,4 +32,5 @@ Portuguese: Luís Alves
 
 # Licenses
 
-This tool and its source code is shared under an [MIT license](https://en.wikipedia.org/wiki/MIT_License). See [license.md](./license.md) for details. Don't Move is &copy; 2013-2015 Steve Richey.
+This tool and its source code is shared under an [MIT license](https://en.wikipedia.org/wiki/MIT_License). See [license.md](./license.md) for details.  
+Don't Move is &copy; 2013-2015 Steve Richey.
