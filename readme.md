@@ -25,10 +25,10 @@ This is hosted online, but if you run `lime build flash` from the command line y
 
 # Credits
 
-Danish: Anders Nissen
-Dutch: Justin Tlozoot Post
-Italian: Luca Carbone
-Portuguese: Luís Alves
+Danish: Anders Nissen 
+Dutch: Justin Tlozoot Post  
+Italian: Luca Carbone  
+Portuguese: Luís Alves  
 
 # Licenses
 
