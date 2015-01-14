@@ -29,6 +29,7 @@ Croatian: Darkborn
 Danish: Anders Nissen  
 Dutch: Justin Tlozoot Post  
 Finnish:  Pietari Kotala  
+German: Tobias "Lordtobi" Heinen  
 Italian: Luca Carbone  
 Portuguese: Luís Alves  
 Swedish: Artucino  
