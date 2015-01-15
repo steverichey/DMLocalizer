@@ -31,6 +31,7 @@ Dutch: Justin Tlozoot Post
 Finnish:  Pietari Kotala  
 German: Tobias "Lordtobi" Heinen  
 Italian: Luca Carbone  
+Polish: Michał "Godless" Figas  
 Portuguese: Luís Alves  
 Swedish: Artucino  
 
