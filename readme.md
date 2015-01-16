@@ -33,6 +33,7 @@ German: Tobias "Lordtobi" Heinen
 Italian: Luca Carbone  
 Polish: Michał "Godless" Figas  
 Portuguese: Luís Alves  
+Russian: Ilia "Pebujetti" Golovkin  
 Swedish: Artucino  
 
 # Licenses
