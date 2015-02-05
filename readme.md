@@ -29,11 +29,13 @@ Croatian: Darkborn
 Danish: Anders Nissen  
 Dutch: Justin Tlozoot Post  
 Finnish:  Pietari Kotala  
+French: utybo  
 German: Tobias "Lordtobi" Heinen  
 Italian: Luca Carbone  
 Polish: Michał "Godless" Figas  
 Portuguese: Luís Alves  
 Russian: Ilia "Pebujetti" Golovkin  
+Spanish: SillyWalk  
 Swedish: Artucino  
 
 # Licenses
