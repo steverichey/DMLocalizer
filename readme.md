@@ -13,6 +13,31 @@ A localization tool for [Don't Move](http://dontmove.co/). Creates static art as
 7. [Open an issue](./../../issues) with translations for the rest of the in-game text (see [here](https://github.com/steverichey/DMLocalizer/issues/1) for example).
 8. You'll be included in the credits below, and in the game's manual!
 
+# Template
+
+```
+lang-en
+	press_left_or_right: Press left or right
+	release_to_start: Release left and right to start
+	release_to_erase: Release left and right to erase
+	fill_bar_to_erase: Fill bar to erase save data
+	erasing_save_data: Erasing save data
+	attempts: attempts
+	distance: distance
+	seconds: seconds
+	medals: medals
+	levels: levels
+	coins: coins
+	trophies: trophies
+	zenith: zenith
+	zeniths: zeniths
+	the_end: the end
+	trophy_unlocked: trophy unlocked
+	paused: paused
+	time: time
+	hold_left_or_right: Hold left or right to restart
+```
+
 # Notes
 
 * You can use the mouse to move the words around.
@@ -42,4 +67,4 @@ Swedish: Artucino
 # Licenses
 
 This tool and its source code is shared under an [MIT license](https://en.wikipedia.org/wiki/MIT_License). See [license.md](./license.md) for details.  
-Don't Move is &copy; 2013-2015 Steve Richey.
+Don't Move is &copy; 2013-2016 Steve Richey.
