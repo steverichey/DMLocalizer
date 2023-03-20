@@ -54,7 +54,7 @@ Bulgarian: Proxystar
 Croatian: Darkborn  
 Danish: Anders Nissen  
 Dutch: Justin Tlozoot Post  
-Finnish:  Pietari Kotala  
+Finnish: Jormangeud
 French: utybo  
 German: Tobias "Lordtobi" Heinen  
 Italian: Luca Carbone  
